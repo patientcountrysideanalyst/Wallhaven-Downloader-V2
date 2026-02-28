@@ -75,6 +75,34 @@ namespace Wallhaven_Downloader_V2 {
             return result;
         }
 
+        private bool TryGetJsonFromUrl(string url, out JObject result) {
+            result = null;
+            try {
+                result = GetJsonFromURL(url);
+                return true;
+            }
+            catch (WebException ex) {
+                Logpush($"Network error while contacting {url}: {ex.Message}");
+                MessageBox.Show(
+                    "Cannot reach Wallhaven. Please check your internet connection and try again.",
+                    "Network Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                return false;
+            }
+            catch (Exception ex) {
+                Logpush($"Unexpected error while contacting {url}: {ex.Message}");
+                MessageBox.Show(
+                    "An unexpected error happened while contacting Wallhaven.",
+                    "Request Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                return false;
+            }
+        }
+
         void DownloadImagesFromList(object data) {
             ThreadParams thread_params = (ThreadParams)data;
             int thread_id = thread_params.thread_id;
@@ -106,6 +134,10 @@ namespace Wallhaven_Downloader_V2 {
                     }
                     catch (WebException e) {
                         Logpush($"[Thread-{thread_id}]Error while downloading {image.url}");
+                        Logpush(e.ToString());
+                    }
+                    catch (Exception e) {
+                        Logpush($"[Thread-{thread_id}]Unexpected error while downloading {image.url}");
                         Logpush(e.ToString());
                     }
                     if (!started) {
@@ -206,9 +238,14 @@ namespace Wallhaven_Downloader_V2 {
                 FiltersGroupBox.Enabled = false;
                 SearchSettingsGroupBox.Enabled = false;
                 ImageSourceGroupBox.Enabled = false;
-                JObject search_settings = GetJsonFromURL($"https://wallhaven.cc/api/v1/settings?apikey={APIKey}");
-                search_params.ConvertFromJson(search_settings);
-                Logpush("Search parameters... OK!");
+                JObject search_settings;
+                if (TryGetJsonFromUrl($"https://wallhaven.cc/api/v1/settings?apikey={APIKey}", out search_settings)) {
+                    search_params.ConvertFromJson(search_settings);
+                    Logpush("Search parameters... OK!");
+                }
+                else {
+                    Logpush("Could not load remote search settings. Default settings will be used.");
+                }
             }
             else {
                 PurityNSFWCheckbox.Enabled = false;
@@ -620,7 +657,10 @@ namespace Wallhaven_Downloader_V2 {
         private void ImageSourceFetchCollections_Click(object sender, EventArgs e) {
             if (ImageSourceUsername.Text != "") {
                 Logpush($"Fetching {ImageSourceUsername.Text} collections...");
-                JObject collections_response  = GetJsonFromURL($"https://wallhaven.cc/api/v1/collections/{ImageSourceUsername.Text}?apikey={APIKey}");
+                JObject collections_response;
+                if (!TryGetJsonFromUrl($"https://wallhaven.cc/api/v1/collections/{ImageSourceUsername.Text}?apikey={APIKey}", out collections_response)) {
+                    return;
+                }
                 foreach (var col in collections_response.SelectToken("data")) {
                     Collections.Add(new Collection(col["label"].ToString(), Int32.Parse(col["id"].ToString()), ImageSourceUsername.Text));
                 }
@@ -742,7 +782,15 @@ namespace Wallhaven_Downloader_V2 {
                         Logpush("Image source: Search");
                         search_params.q = WebUtility.UrlEncode(ImageSourceSearchQuery.Text);
                         string request_url = $"https://wallhaven.cc/api/v1/search?{search_params}&apikey={APIKey}";
-                        JObject probe = GetJsonFromURL(request_url);
+                        JObject probe;
+                        if (!TryGetJsonFromUrl(request_url, out probe)) {
+                            started = false;
+                        }
+                        if (!started) {
+                            Logpush("Could not fetch image URLs because of a network problem.");
+                            UnLockInterface();
+                            return;
+                        }
                         if (target_amount == 0) {
                             target_amount = Int32.Parse(probe.SelectToken("meta.total").ToString());
                             Logpush($"Amount set to {target_amount} as it was 0");
@@ -779,7 +827,10 @@ namespace Wallhaven_Downloader_V2 {
                             }
                             search_params.page++;
                             request_url = $"https://wallhaven.cc/api/v1/search?{search_params}&apikey={APIKey}";
-                            probe = GetJsonFromURL(request_url);
+                            if (!TryGetJsonFromUrl(request_url, out probe)) {
+                                started = false;
+                                break;
+                            }
                         }
                     }
                     else {
@@ -790,7 +841,15 @@ namespace Wallhaven_Downloader_V2 {
                                 Logpush($"Selected collection is {target_collection.name}, ID: {target_collection.id}, User: {target_collection.owner}");
                                 Logpush("Warn: Only Purity filter can be aplied to collections!");
                                 string base_url = $"https://wallhaven.cc/api/v1/collections/{target_collection.owner}/{target_collection.id}";
-                                JObject response = GetJsonFromURL(base_url + $"?purity={search_params.purity}&page={search_params.page}&apikey={APIKey}");
+                                JObject response;
+                                if (!TryGetJsonFromUrl(base_url + $"?purity={search_params.purity}&page={search_params.page}&apikey={APIKey}", out response)) {
+                                    started = false;
+                                }
+                                if (!started) {
+                                    Logpush("Could not fetch collection image URLs because of a network problem.");
+                                    UnLockInterface();
+                                    return;
+                                }
                                 if (target_amount == 0) {
                                     target_amount = Int32.Parse(response.SelectToken("meta.total").ToString());
                                     Logpush($"Amount set to {target_amount} as it was 0");
@@ -822,7 +881,10 @@ namespace Wallhaven_Downloader_V2 {
                                         }
                                     }
                                     search_params.page++;
-                                    response = GetJsonFromURL(base_url + $"?purity={search_params.purity}&page={search_params.page}&apikey={APIKey}");
+                                    if (!TryGetJsonFromUrl(base_url + $"?purity={search_params.purity}&page={search_params.page}&apikey={APIKey}", out response)) {
+                                        started = false;
+                                        break;
+                                    }
                                 }
                             }
                             else {

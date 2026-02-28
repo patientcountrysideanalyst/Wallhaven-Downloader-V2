@@ -29,7 +29,17 @@ namespace Wallhaven_Downloader_V2 {
         }
 
         private void OpenProfileSettingButton_Click(object sender, EventArgs e) {
-            Process.Start("https://wallhaven.cc/settings/account");
+            try {
+                Process.Start("https://wallhaven.cc/settings/account");
+            }
+            catch (Exception ex) {
+                MessageBox.Show(
+                    $"Unable to open browser right now: {ex.Message}",
+                    "Network Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+            }
         }
 
         private void APIKeySaveCheckbox_CheckedChanged(object sender, EventArgs e) {
