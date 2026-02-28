@@ -58,5 +58,29 @@ namespace Wallhaven_Downloader_V2.Properties {
                 this["SavePath"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool RateLimitEnabled {
+            get {
+                return ((bool)(this["RateLimitEnabled"]));
+            }
+            set {
+                this["RateLimitEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        public int RateLimitInterval {
+            get {
+                return ((int)(this["RateLimitInterval"]));
+            }
+            set {
+                this["RateLimitInterval"] = value;
+            }
+        }
     }
 }

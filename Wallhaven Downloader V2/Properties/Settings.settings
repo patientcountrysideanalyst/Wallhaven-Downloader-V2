@@ -11,5 +11,11 @@
     <Setting Name="SavePath" Type="System.String" Scope="User">
       <Value Profile="(Default)">Downloads</Value>
     </Setting>
+    <Setting Name="RateLimitEnabled" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="RateLimitInterval" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

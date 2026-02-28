@@ -97,6 +97,9 @@ namespace Wallhaven_Downloader_V2
             this.SavePathButton = new System.Windows.Forms.Button();
             this.ThreadsTextBox = new System.Windows.Forms.TextBox();
             this.ThreadsLabel = new System.Windows.Forms.Label();
+            this.RequestRateLimitCheckbox = new System.Windows.Forms.CheckBox();
+            this.RateLimitIntervalLabel = new System.Windows.Forms.Label();
+            this.RateLimitIntervalTextBox = new System.Windows.Forms.TextBox();
             this.colorDialog1 = new System.Windows.Forms.ColorDialog();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.FiltersGroupBox.SuspendLayout();
@@ -680,7 +683,7 @@ namespace Wallhaven_Downloader_V2
             // DownloadButton
             // 
             this.DownloadButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.DownloadButton.Location = new System.Drawing.Point(6, 48);
+            this.DownloadButton.Location = new System.Drawing.Point(6, 96);
             this.DownloadButton.Name = "DownloadButton";
             this.DownloadButton.Size = new System.Drawing.Size(181, 37);
             this.DownloadButton.TabIndex = 5;
@@ -692,7 +695,7 @@ namespace Wallhaven_Downloader_V2
             // 
             this.CancelButton.Enabled = false;
             this.CancelButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.CancelButton.Location = new System.Drawing.Point(6, 91);
+            this.CancelButton.Location = new System.Drawing.Point(6, 139);
             this.CancelButton.Name = "CancelButton";
             this.CancelButton.Size = new System.Drawing.Size(117, 27);
             this.CancelButton.TabIndex = 6;
@@ -810,18 +813,21 @@ namespace Wallhaven_Downloader_V2
             this.groupBox2.Controls.Add(this.SavePathButton);
             this.groupBox2.Controls.Add(this.ThreadsTextBox);
             this.groupBox2.Controls.Add(this.ThreadsLabel);
+            this.groupBox2.Controls.Add(this.RequestRateLimitCheckbox);
+            this.groupBox2.Controls.Add(this.RateLimitIntervalLabel);
+            this.groupBox2.Controls.Add(this.RateLimitIntervalTextBox);
             this.groupBox2.Controls.Add(this.DownloadButton);
             this.groupBox2.Controls.Add(this.CancelButton);
             this.groupBox2.Location = new System.Drawing.Point(393, 262);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(193, 124);
+            this.groupBox2.Size = new System.Drawing.Size(193, 172);
             this.groupBox2.TabIndex = 8;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Controls";
             // 
             // LogoutButton
             // 
-            this.LogoutButton.Location = new System.Drawing.Point(129, 91);
+            this.LogoutButton.Location = new System.Drawing.Point(129, 139);
             this.LogoutButton.Name = "LogoutButton";
             this.LogoutButton.Size = new System.Drawing.Size(58, 27);
             this.LogoutButton.TabIndex = 10;
@@ -856,11 +862,42 @@ namespace Wallhaven_Downloader_V2
             this.ThreadsLabel.TabIndex = 7;
             this.ThreadsLabel.Text = "Threads: ";
             // 
+            // RequestRateLimitCheckbox
+            // 
+            this.RequestRateLimitCheckbox.AutoSize = true;
+            this.RequestRateLimitCheckbox.Location = new System.Drawing.Point(9, 51);
+            this.RequestRateLimitCheckbox.Name = "RequestRateLimitCheckbox";
+            this.RequestRateLimitCheckbox.Size = new System.Drawing.Size(113, 17);
+            this.RequestRateLimitCheckbox.TabIndex = 11;
+            this.RequestRateLimitCheckbox.Text = "Request Rate Limit";
+            this.RequestRateLimitCheckbox.UseVisualStyleBackColor = true;
+            this.RequestRateLimitCheckbox.CheckedChanged += new System.EventHandler(this.RequestRateLimitCheckbox_CheckedChanged);
+            // 
+            // RateLimitIntervalLabel
+            // 
+            this.RateLimitIntervalLabel.AutoSize = true;
+            this.RateLimitIntervalLabel.Location = new System.Drawing.Point(6, 76);
+            this.RateLimitIntervalLabel.Name = "RateLimitIntervalLabel";
+            this.RateLimitIntervalLabel.Size = new System.Drawing.Size(94, 13);
+            this.RateLimitIntervalLabel.TabIndex = 12;
+            this.RateLimitIntervalLabel.Text = "Interval (Seconds):";
+            // 
+            // RateLimitIntervalTextBox
+            // 
+            this.RateLimitIntervalTextBox.Enabled = false;
+            this.RateLimitIntervalTextBox.Location = new System.Drawing.Point(106, 73);
+            this.RateLimitIntervalTextBox.Name = "RateLimitIntervalTextBox";
+            this.RateLimitIntervalTextBox.Size = new System.Drawing.Size(81, 20);
+            this.RateLimitIntervalTextBox.TabIndex = 13;
+            this.RateLimitIntervalTextBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.RateLimitIntervalTextBox_KeyPress);
+            this.RateLimitIntervalTextBox.Leave += new System.EventHandler(this.RateLimitIntervalTextBox_Leave);
+            // 
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(917, 398);
+            this.ClientSize = new System.Drawing.Size(917, 445);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.ImageSourceGroupBox);
             this.Controls.Add(this.LogGroupBox);
@@ -967,5 +1004,8 @@ namespace Wallhaven_Downloader_V2
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox PagesRangeBegin;
         private System.Windows.Forms.RadioButton PagesRangeSelectorRadioButton;
+        private System.Windows.Forms.CheckBox RequestRateLimitCheckbox;
+        private System.Windows.Forms.Label RateLimitIntervalLabel;
+        private System.Windows.Forms.TextBox RateLimitIntervalTextBox;
     }
 }
