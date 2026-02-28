@@ -30,6 +30,40 @@ namespace Wallhaven_Downloader_V2 {
             DownloadProgressBar.Step = 1;
         }
 
+        private int GetValidatedRateLimitInterval() {
+            int configured_interval = Properties.Settings.Default.RateLimitInterval;
+            if (configured_interval > 0) {
+                return configured_interval;
+            }
+            return 5;
+        }
+
+        private void PersistRateLimitIntervalFromUI() {
+            int parsed_interval;
+            if (!Int32.TryParse(RateLimitIntervalTextBox.Text, out parsed_interval) || parsed_interval <= 0) {
+                parsed_interval = 5;
+            }
+            RateLimitIntervalTextBox.Text = parsed_interval.ToString();
+            Properties.Settings.Default.RateLimitInterval = parsed_interval;
+            Properties.Settings.Default.Save();
+        }
+
+        private void UpdateRateLimitControlsState() {
+            RateLimitIntervalTextBox.Enabled = RequestRateLimitCheckbox.Checked;
+        }
+
+        private void EnforceRateLimitDelay() {
+            if (!Properties.Settings.Default.RateLimitEnabled) {
+                return;
+            }
+            int interval_seconds = Properties.Settings.Default.RateLimitInterval;
+            if (interval_seconds <= 0) {
+                return;
+            }
+            // Enforce request throttling between API/download calls to avoid hammering the API.
+            Thread.Sleep(interval_seconds * 1000);
+        }
+
         public JObject GetJsonFromURL(string url) {
             WebRequest request = WebRequest.Create(url);
             WebResponse response = request.GetResponse();
@@ -78,6 +112,8 @@ namespace Wallhaven_Downloader_V2 {
                         break;
                     }
                     AddProgressBarStep();
+                    // Delay between wallpaper download requests when rate limit is enabled.
+                    EnforceRateLimitDelay();
                 }
             }
             if (!started) {
@@ -140,6 +176,12 @@ namespace Wallhaven_Downloader_V2 {
             }
         }
 
+        private void RateLimitIntervalTextBox_KeyPress(object sender, KeyPressEventArgs e) {
+            if ((e.KeyChar <= 47 || e.KeyChar >= 58) && e.KeyChar != 8) {
+                e.Handled = true;
+            }
+        }
+
         private void AmountToDownloadTextBox_KeyPressed(object sender, KeyPressEventArgs e) {
             if ((e.KeyChar <= 47 || e.KeyChar >= 58) && e.KeyChar != 8) {
                 e.Handled = true;
@@ -153,8 +195,12 @@ namespace Wallhaven_Downloader_V2 {
 
         private void Main_Shown(object sender, EventArgs e){
             Logpush($"===[Application Settings]===\n[APIKey]={APIKey}\n[Threads]={Properties.Settings.Default.Threads}\n" +
-                $"[SavePath]={Properties.Settings.Default.SavePath}\n=======================");
+                $"[SavePath]={Properties.Settings.Default.SavePath}\n[RateLimitEnabled]={Properties.Settings.Default.RateLimitEnabled}\n" +
+                $"[RateLimitInterval]={GetValidatedRateLimitInterval()}\n=======================");
             ThreadsTextBox.Text = Properties.Settings.Default.Threads.ToString();
+            RequestRateLimitCheckbox.Checked = Properties.Settings.Default.RateLimitEnabled;
+            RateLimitIntervalTextBox.Text = GetValidatedRateLimitInterval().ToString();
+            UpdateRateLimitControlsState();
             if (APIKey != "") {
                 Logpush("API Key detected, please wait while search parameters being fetch...");
                 FiltersGroupBox.Enabled = false;
@@ -260,6 +306,7 @@ namespace Wallhaven_Downloader_V2 {
             if (FiltersGroupBox.InvokeRequired || SearchSettingsGroupBox.InvokeRequired ||
                 ImageSourceGroupBox.InvokeRequired || DownloadButton.InvokeRequired ||
                 ThreadsTextBox.InvokeRequired || SavePathButton.InvokeRequired ||
+                RequestRateLimitCheckbox.InvokeRequired || RateLimitIntervalTextBox.InvokeRequired ||
                 LogoutButton.InvokeRequired || CancelButton.InvokeRequired || InvokeRequired) {
                 SetLockInterfaceCallback d = new SetLockInterfaceCallback(LockInterface);
                 Invoke(d, new object[] { });
@@ -272,6 +319,8 @@ namespace Wallhaven_Downloader_V2 {
                 DownloadButton.Enabled = false;
                 ThreadsTextBox.Enabled = false;
                 SavePathButton.Enabled = false;
+                RequestRateLimitCheckbox.Enabled = false;
+                RateLimitIntervalTextBox.Enabled = false;
                 LogoutButton.Enabled = false;
                 CancelButton.Enabled = true;
             }
@@ -282,6 +331,7 @@ namespace Wallhaven_Downloader_V2 {
             if (FiltersGroupBox.InvokeRequired || SearchSettingsGroupBox.InvokeRequired ||
                 ImageSourceGroupBox.InvokeRequired || DownloadButton.InvokeRequired ||
                 ThreadsTextBox.InvokeRequired || SavePathButton.InvokeRequired ||
+                RequestRateLimitCheckbox.InvokeRequired || RateLimitIntervalTextBox.InvokeRequired ||
                 LogoutButton.InvokeRequired || CancelButton.InvokeRequired || InvokeRequired) {
                 SetUnlockInterfaceCallback d = new SetUnlockInterfaceCallback(UnLockInterface);
                 Invoke(d, new object[] { });
@@ -294,6 +344,8 @@ namespace Wallhaven_Downloader_V2 {
                 DownloadButton.Enabled = true;
                 ThreadsTextBox.Enabled = true;
                 SavePathButton.Enabled = true;
+                RequestRateLimitCheckbox.Enabled = true;
+                UpdateRateLimitControlsState();
                 LogoutButton.Enabled = true;
                 CancelButton.Enabled = false;
             }
@@ -638,6 +690,8 @@ namespace Wallhaven_Downloader_V2 {
                 List<Image> Images = new List<Image>();
                 int threads_requested = Int32.Parse(ThreadsTextBox.Text);
                 Properties.Settings.Default.Threads = threads_requested;
+                PersistRateLimitIntervalFromUI();
+                Properties.Settings.Default.RateLimitEnabled = RequestRateLimitCheckbox.Checked;
                 Properties.Settings.Default.Save();
                 int target_amount;
                 if (AmountToDownloadTextBox.Text != "") {
@@ -682,7 +736,7 @@ namespace Wallhaven_Downloader_V2 {
                 }
 
                 if (started) {
-                    Logpush("This might take a while. (Images fetched at rate of 64/1.34s)");
+                    Logpush("This might take a while. Image fetch speed depends on rate limit settings.");
                     Logpush("[Stage 1/2: URL fetching]");
                     if (ImageSourceSearchRadioButton.Checked) {
                         Logpush("Image source: Search");
@@ -715,7 +769,7 @@ namespace Wallhaven_Downloader_V2 {
                             SetMaxProgressBar(target_amount);
                         }
                         while ((Images.Count < target_amount & search_params.page <= search_params.end_page) & started) {
-                            Thread.Sleep(1340);
+                            EnforceRateLimitDelay();
                             foreach (var image in probe.SelectToken("data")) {
                                 Images.Add(new Image(image["id"].ToString(), image["path"].ToString()));
                                 ProgressBarSetValue(Images.Count);
@@ -759,7 +813,7 @@ namespace Wallhaven_Downloader_V2 {
                                     SetMaxProgressBar(target_amount);
                                 }
                                 while ((Images.Count < target_amount & search_params.page <= search_params.end_page) & started) {
-                                    Thread.Sleep(1340);
+                                    EnforceRateLimitDelay();
                                     foreach (var image in response.SelectToken("data")) {
                                         Images.Add(new Image(image["id"].ToString(), image["path"].ToString()));
                                         ProgressBarSetValue(Images.Count);
@@ -823,6 +877,17 @@ namespace Wallhaven_Downloader_V2 {
                 total_downloaded = 0;
                 UnLockInterface();
             }).Start();
+        }
+
+
+        private void RequestRateLimitCheckbox_CheckedChanged(object sender, EventArgs e) {
+            Properties.Settings.Default.RateLimitEnabled = RequestRateLimitCheckbox.Checked;
+            Properties.Settings.Default.Save();
+            UpdateRateLimitControlsState();
+        }
+
+        private void RateLimitIntervalTextBox_Leave(object sender, EventArgs e) {
+            PersistRateLimitIntervalFromUI();
         }
 
         private void CancelButton_Click(object sender, EventArgs e) {
