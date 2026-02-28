@@ -17,3 +17,33 @@ If you don't want to login, simply press "Login" button without actually eneteri
 
 ## Everything else
 C# is not my main language so code may be garbage, pull requests are welcomed as well as bug reports, etc.
+
+## Linux publish commands
+
+> This repository is currently a **.NET Framework 4.7.2 Windows Forms** app. Linux publishing requires migrating to modern .NET (for example `net8.0`) and replacing Windows Forms with a Linux-compatible UI or a CLI flow.
+
+A helper script is included for Linux publish workflows once migration is completed:
+
+```bash
+./scripts/publish-linux.sh linux-x64 publish
+```
+
+Equivalent direct commands:
+
+```bash
+# Framework-dependent
+ dotnet publish "Wallhaven Downloader V2/Wallhaven Downloader V2.csproj" -c Release -r linux-x64 --self-contained false -o publish/linux-x64/framework-dependent
+
+# Self-contained
+ dotnet publish "Wallhaven Downloader V2/Wallhaven Downloader V2.csproj" -c Release -r linux-x64 --self-contained true -o publish/linux-x64/self-contained
+
+# Single-file self-contained
+ dotnet publish "Wallhaven Downloader V2/Wallhaven Downloader V2.csproj" -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o publish/linux-x64/single-file
+```
+
+On Linux, make the produced host binary executable:
+
+```bash
+chmod +x publish/linux-x64/single-file/Wallhaven\ Downloader\ V2
+./publish/linux-x64/single-file/Wallhaven\ Downloader\ V2
+```
